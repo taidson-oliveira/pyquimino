@@ -1,4 +1,3 @@
-
 import time, sys
 import xlsxwriter
 import serial
@@ -7,31 +6,37 @@ import matplotlib.pyplot as plt
 class Coletor(serial.Serial):
     def __init__(self):
         serial.Serial.__init__(self)
+
+        self.listaDados = []
+        self.listaTempo = []
+
         try:
-            self.receivedSF = serial.Serial('/dev/ttyUSB1', 9600)
+            #set port received data
+            self.receivedSF = serial.Serial('/dev/ttyUSB2', 9600)
         except serial.serialutil.SerialException:
             return '/dev/ttyUSB_X is not connected'
 
 
-        self.listaDados = []
-        self.listaTempo = []
-        self.quantidadeColetada = 0
-
     def dados(self):
-        self.quantidadeColetada = int(input("Numero de dados a ser coletados: "))
         tempo_ini = time.time()
-        for item in range(self.quantidadeColetada):
-            valor = int(self.receivedSF.read(2))
-            tempo_fim = time.time()
-            tempo = tempo_fim - tempo_ini
-            #tempo_ini = tempo_fim
-            print(valor,tempo)
-            self.listaDados.append(valor)
-            self.listaTempo.append(tempo)
+        verification = True
+        while verification:
+            valor = (int(self.receivedSF.readline()))
+            if valor != -100:
+                tempo_fim = time.time()
+                tempo = tempo_fim - tempo_ini
+                # tempo_ini = tempo_fim
+                print(valor,tempo)
+                if tempo >=1:
+                    self.listaDados.append(valor)
+                    self.listaTempo.append(tempo)
+            else:
+                verification = False
+
 
     def graph(self):
         if self.listaDados or self.listaTempo:
-            plt.plot(self.listaTempo,self.listaDados)
+            plt.plot(self.listaTempo[1:-1],self.listaDados[1:-1])
             plt.show()
         else:
             self.listaDados = list(input("Digite a lista de valores no eixo x: "))
@@ -56,4 +61,6 @@ class Coletor(serial.Serial):
         workbook.close()
 
     def desconectar(self):
+        self.listaDados = []
+        self.listaTempo = []
         self.receivedSF.close()
